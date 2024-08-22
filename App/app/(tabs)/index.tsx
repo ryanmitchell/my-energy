@@ -66,7 +66,7 @@ export default function HomeScreen() {
             setSolarEdge(response);
 
             // update every 30s
-            setTimeout(_solarEdgeV1, pollFrequency);
+            setTimeout(() => _solarEdgeV1(credentials), pollFrequency);
           });
       })
       .catch(err => _handleError(err));
