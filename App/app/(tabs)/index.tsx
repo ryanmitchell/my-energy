@@ -45,7 +45,7 @@ export default function HomeScreen() {
   }
 
   let _proxy = (url) => {
-    return 'https://corsproxy.io/?' + encodeURIComponent(url);
+    return 'https://corsproxy.io/?' + encodeURIComponent(url + '&uid=' + DateTime.now().toMillis());
   };
 
   let _solarEdgeV1 = (credentials) => {
