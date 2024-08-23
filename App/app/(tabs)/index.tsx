@@ -312,7 +312,7 @@ export default function HomeScreen() {
       { myEnergi && <View>
 
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Andi's MyEnergi</ThemedText>
+        <ThemedText type="title">MyEnergi</ThemedText>
       </ThemedView>
 
       { myEnergi.harvi && myEnergi.harvi[0] &&<ThemedView style={styles.stepContainer}>
