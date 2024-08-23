@@ -356,12 +356,12 @@ export default function HomeScreen() {
             {
               label: 'Import',
               data: myEnergi.totals.map(value => (value.imp ?? 0) / 3600 / 1000),
-              backgroundColor: 'rgb(0, 255, 0)',
+              backgroundColor: 'rgb(0, 0, 0)',
             },
             {
               label: 'Export',
               data: myEnergi.totals.map(value => (value.exp ?? 0) / 3600 / 1000),
-              backgroundColor: 'rgb(255, 0, 0)',
+              backgroundColor: 'rgb(0, 255, 0)',
             },
           ],
         }}
