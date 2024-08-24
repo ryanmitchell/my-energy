@@ -1,8 +1,8 @@
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { Button, StyleSheet, TextInput, View, type ViewProps } from 'react-native';
 import { useContext, useCallback, useEffect, useState } from 'react';
 
 const { DateTime } = require('luxon');
-
+import { Formik, ErrorMessage } from 'formik';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -35,13 +35,14 @@ import { ThemedView } from '@/components/ThemedView';
 
 import { ValueToHuman } from '@/constants/ValueToHuman';
 
-export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
+export function SolarEdge({ credentials, baseUrl, providerId, updateCredentials, ...otherProps }) {
 
   let pollFrequency = 30 * 10000;
   let timoutId;
 
   const [anchorDate, setAnchorDate] = useState(DateTime.now());
   const [solarEdge, setSolarEdge] = useState(false);
+  const [showSettings, setShowSettings] = useState(true);
 
   let _handleError = (err) => {
     console.error(err);
@@ -58,7 +59,8 @@ export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
         service: 'solar-edge',
         site: credentials.site,
         key: credentials.key,
-        endpoint: 'overview', query: ''
+        endpoint: 'overview',
+        query: ''
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +68,6 @@ export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
     })
       .then(response => response.json())
       .then(response => {
-
           fetch(baseUrl, {
             method: 'POST',
             body: JSON.stringify({
@@ -87,14 +88,17 @@ export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
             setSolarEdge(response);
 
             // update every 30s
-            timoutId = setTimeout(() => _solarEdgeV1(credentials), pollFrequency);
+            timeoutId = setTimeout(() => _solarEdgeV1(credentials), pollFrequency);
           });
       })
       .catch(err => _handleError(err));
   };
 
   useEffect(() => {
-    _solarEdgeV1(credentials);
+    if (credentials.site) {
+        _solarEdgeV1(credentials);
+        setShowSettings(false);
+    }
 
     return function cleanup() {
       try {
@@ -104,6 +108,62 @@ export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
       }
     };
   }, []);
+
+  if (showSettings) {
+    return (<View>
+      <Formik
+       initialValues={{
+         key: credentials?.key ?? '',
+         site: credentials?.site ?? '',
+       }}
+      validate={values => {
+          const errors = {};
+
+          if (! values.key) {
+              errors.key = 'Required';
+          }
+
+          if (! values.site) {
+              errors.site = 'Required';
+          }
+
+          return errors;
+      }}
+      onSubmit={values => {
+        credentials = values;
+        updateCredentials(providerId, values);
+        showSettings(false);
+      }}
+      >
+      {({ handleChange, handleBlur, handleSubmit, values }) => (
+        <ThemedView>
+
+          <ThemedText type="subtitle">Solar Edge:</ThemedText>
+
+          <ThemedText>API Key</ThemedText>
+          <TextInput
+            onChangeText={handleChange('key')}
+            onBlur={handleBlur('key')}
+            value={values.key}
+            style={styles.input}
+          />
+          <ErrorMessage name="key" render={msg => <ThemedText type="error">{msg}</ThemedText>}/>
+
+          <ThemedText>Site ID</ThemedText>
+          <TextInput
+            onChangeText={handleChange('site')}
+            onBlur={handleBlur('site')}
+            value={values.site}
+            style={styles.input}
+          />
+          <ErrorMessage name="site" render={msg => <ThemedText type="error">{msg}</ThemedText>}/>
+
+          <Button onPress={handleSubmit} title="Submit" />
+        </ThemedView>
+      )}
+      </Formik>
+    </View>);
+  }
 
   if (! solarEdge) {
     return (<View></View>);
@@ -187,12 +247,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  input: {
+    padding: 8,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+  }
 
 });

@@ -1,7 +1,8 @@
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { Button, StyleSheet, TextInput, View, type ViewProps } from 'react-native';
 import { useContext, useCallback, useEffect, useState } from 'react';
 
 const { DateTime } = require('luxon');
+import { Formik, ErrorMessage } from 'formik';
 
 import {
   Chart as ChartJS,
@@ -35,13 +36,14 @@ import { ThemedView } from '@/components/ThemedView';
 
 import { ValueToHuman } from '@/constants/ValueToHuman';
 
-export function MyEnergi({ credentials, baseUrl, ...otherProps }) {
+export function MyEnergi({ credentials, baseUrl, providerId, updateCredentials, ...otherProps }) {
 
   let pollFrequency = 30 * 10000;
   let timeoutId;
 
   const [anchorDate, setAnchorDate] = useState(DateTime.now());
   const [myEnergi, setMyEnergi] = useState(false);
+  const [showSettings, setShowSettings] = useState(true);
 
   let _handleError = (err) => {
     console.error(err);
@@ -134,14 +136,17 @@ export function MyEnergi({ credentials, baseUrl, ...otherProps }) {
         setMyEnergi(r);
 
         // update every 30s
-        timeoutId = setTimeout(() => _solarEdgeV1(credentials), pollFrequency);
+        timeoutId = setTimeout(() => _myEnergi(credentials), pollFrequency);
 
       })
       .catch(err => _handleError());
   }
 
   useEffect(() => {
-    _myEnergi(credentials);
+    if (credentials.device) {
+        _myEnergi(credentials);
+        setShowSettings(false);
+    }
 
     return function cleanup() {
       try {
@@ -151,6 +156,64 @@ export function MyEnergi({ credentials, baseUrl, ...otherProps }) {
       }
     };
   }, []);
+
+  if (showSettings) {
+
+    return (<View>
+      <ThemedText type="subtitle">My Energi:</ThemedText>
+
+      <Formik
+       initialValues={{
+         device: credentials?.myEnergi?.device ?? '',
+         password: credentials?.myEnergi?.password ?? '',
+       }}
+      validate={values => {
+          const errors = {};
+
+          if (! values.device) {
+              errors.device = 'Required';
+          }
+
+          if (! values.password) {
+              errors.password = 'Required';
+          }
+
+          return errors;
+      }}
+      onSubmit={values => {
+        credentials = values;
+        updateCredentials(providerId, values);
+        showSettings(false);
+      }}
+      >
+      {({ handleChange, handleBlur, handleSubmit, values }) => (
+        <ThemedView>
+
+          <ThemedText>Device ID</ThemedText>
+          <TextInput
+            onChangeText={handleChange('device')}
+            onBlur={handleBlur('device')}
+            value={values.device}
+            style={styles.input}
+          />
+          <ErrorMessage name="device" render={msg => <ThemedText type="error">{msg}</ThemedText>}/>
+
+          <ThemedText>Password</ThemedText>
+          <TextInput
+            onChangeText={handleChange('password')}
+            onBlur={handleBlur('password')}
+            value={values.password}
+            style={styles.input}
+          />
+          <ErrorMessage name="password" render={msg => <ThemedText type="error">{msg}</ThemedText>}/>
+
+          <Button onPress={handleSubmit} title="Submit" />
+        </ThemedView>
+      )}
+      </Formik>
+
+    </View>);
+  }
 
   if (! myEnergi) {
     return (<View></View>);
@@ -248,12 +311,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+  input: {
+    padding: 8,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#eee',
+  }
 
 });

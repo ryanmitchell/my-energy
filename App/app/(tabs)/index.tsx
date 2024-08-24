@@ -1,6 +1,7 @@
-import { Image, StyleSheet, Platform, View } from 'react-native';
+import { Button, Image, StyleSheet, Platform, View } from 'react-native';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
+import * as Crypto from 'expo-crypto';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -12,7 +13,7 @@ import { SolarEdge } from '@/providers/SolarEdge';
 export default function HomeScreen() {
   let baseUrl = 'https://energy-proxy.test';
 
-  const [credentials, setCredentials] = useState({});
+  const [credentials, setCredentials] = useState([]);
   const [hasProvider, setHasProvider] = useState(false);
 
   useFocusEffect(
@@ -34,6 +35,49 @@ export default function HomeScreen() {
     }, [])
   );
 
+  let _addProvider = (type) => {
+    let newCreds = [...credentials];
+
+    newCreds.push({
+      id: Crypto.randomUUID(),
+      type: type,
+      credentials: {},
+    });
+
+    _storeCredentials(newCreds);
+  };
+
+  let _storeCredentials = (newCreds) => {
+    setCredentials(newCreds);
+    console.log(newCreds);
+    localStorage.setItem('credentials', JSON.stringify(newCreds));
+  }
+
+  let _updateCredentials = (id, creds) => {
+    let newCreds = [...credentials].map((cred) => {
+      if (cred.id == id) {
+        cred.credentials = creds;
+      }
+
+      return cred;
+    });
+
+    _storeCredentials(newCreds);
+  };
+
+  let providers = [];
+  credentials.forEach(cred => {
+    if (cred.type == 'solarEdge') {
+      providers.push(<SolarEdge key={cred.id} credentials={cred.credentials} baseUrl={baseUrl} providerId={cred.id} updateCredentials={_updateCredentials} />);
+      return;
+    }
+
+    if (cred.type == 'myEnergi') {
+      providers.push(<MyEnergi key={cred.id} credentials={cred.credentials} baseUrl={baseUrl} providerId={cred.id} updateCredentials={_updateCredentials} />);
+      return;
+    }
+  });
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -44,22 +88,22 @@ export default function HomeScreen() {
         />
       }>
 
-      { ! hasProvider && <View>
+      { ! providers.length && <View>
 
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">My Energy</ThemedText>
       </ThemedView>
 
       <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Add a data provider</ThemedText>
         <ThemedText>Add a data provider to start monitoring your energy</ThemedText>
       </ThemedView>
 
       </View>}
 
-      { credentials.solarEdge && <SolarEdge credentials={credentials.solarEdge} baseUrl={baseUrl} />}
+      { providers }
 
-      { credentials.myEnergi && <MyEnergi credentials={credentials.myEnergi} baseUrl={baseUrl} />}
+      <Button onPress={() => _addProvider('solarEdge') } title="Add Solar Edge" />
+      <Button onPress={() => _addProvider('myEnergi') } title="Add My Energi" />
 
     </ParallaxScrollView>
   );
