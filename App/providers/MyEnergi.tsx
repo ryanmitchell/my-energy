@@ -38,6 +38,7 @@ import { ValueToHuman } from '@/constants/ValueToHuman';
 export function MyEnergi({ credentials, baseUrl, ...otherProps }) {
 
   let pollFrequency = 30 * 10000;
+  let timeoutId;
 
   const [anchorDate, setAnchorDate] = useState(DateTime.now());
   const [myEnergi, setMyEnergi] = useState(false);
@@ -88,13 +89,15 @@ export function MyEnergi({ credentials, baseUrl, ...otherProps }) {
           }
         });
 
-
         totals = await totals.json();
 
         for (let u in totals) {
             r.totals = totals[u];
         }
 
+        // if we are in a timezone offset but the myenergi api uses UTC,
+        // so we need to check yesterday or forwards to tomorrow the right
+        // number of hours to compensate
         if (anchorDate.offset != 0) {
             let offsetDate = anchorDate.offset > 0 ? anchorDate.startOf('day').minus({ minutes: anchorDate.offset }) : anchorDate.startOf('day').plus({ minutes: anchorDate.offset });
 
@@ -130,12 +133,23 @@ export function MyEnergi({ credentials, baseUrl, ...otherProps }) {
 
         setMyEnergi(r);
 
+        // update every 30s
+        timeoutId = setTimeout(() => _solarEdgeV1(credentials), pollFrequency);
+
       })
       .catch(err => _handleError());
   }
 
   useEffect(() => {
     _myEnergi(credentials);
+
+    return function cleanup() {
+      try {
+        clearTimeout(timoutId)
+      } catch (e) {
+
+      }
+    };
   }, []);
 
   if (! myEnergi) {

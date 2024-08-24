@@ -38,6 +38,7 @@ import { ValueToHuman } from '@/constants/ValueToHuman';
 export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
 
   let pollFrequency = 30 * 10000;
+  let timoutId;
 
   const [anchorDate, setAnchorDate] = useState(DateTime.now());
   const [solarEdge, setSolarEdge] = useState(false);
@@ -86,7 +87,7 @@ export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
             setSolarEdge(response);
 
             // update every 30s
-            setTimeout(() => _solarEdgeV1(credentials), pollFrequency);
+            timoutId = setTimeout(() => _solarEdgeV1(credentials), pollFrequency);
           });
       })
       .catch(err => _handleError(err));
@@ -94,6 +95,14 @@ export function SolarEdge({ credentials, baseUrl, ...otherProps }) {
 
   useEffect(() => {
     _solarEdgeV1(credentials);
+
+    return function cleanup() {
+      try {
+        clearTimeout(timoutId)
+      } catch (e) {
+
+      }
+    };
   }, []);
 
   if (! solarEdge) {

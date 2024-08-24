@@ -29,7 +29,7 @@ export default function HomeScreen() {
       setCredentials(creds);
 
       return () => {
-        console.log('This route is now unfocused.');
+        //console.log('This route is now unfocused.');
       }
     }, [])
   );
