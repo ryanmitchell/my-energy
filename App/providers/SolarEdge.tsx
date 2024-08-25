@@ -35,7 +35,11 @@ import { ThemedView } from '@/components/ThemedView';
 
 import { ValueToHuman } from '@/constants/ValueToHuman';
 
-export function SolarEdge({ credentials, baseUrl, providerId, updateCredentials, ...otherProps }) {
+import { AppContext } from '@/constants/AppContext';
+
+export function SolarEdge({ credentials, providerId, ...otherProps }) {
+
+  const context = useContext(AppContext);
 
   let pollFrequency = 30 * 10000;
   let timoutId;
@@ -53,7 +57,7 @@ export function SolarEdge({ credentials, baseUrl, providerId, updateCredentials,
       return;
     }
 
-    fetch(baseUrl, {
+    fetch(context.baseUrl, {
       method: 'POST',
       body: JSON.stringify({
         service: 'solar-edge',
@@ -68,7 +72,7 @@ export function SolarEdge({ credentials, baseUrl, providerId, updateCredentials,
     })
       .then(response => response.json())
       .then(response => {
-          fetch(baseUrl, {
+          fetch(context.baseUrl, {
             method: 'POST',
             body: JSON.stringify({
               service: 'solar-edge',
@@ -131,7 +135,7 @@ export function SolarEdge({ credentials, baseUrl, providerId, updateCredentials,
       }}
       onSubmit={values => {
         credentials = values;
-        updateCredentials(providerId, values);
+        context.updateCredentials(providerId, values);
         showSettings(false);
       }}
       >
@@ -158,7 +162,14 @@ export function SolarEdge({ credentials, baseUrl, providerId, updateCredentials,
           />
           <ErrorMessage name="site" render={msg => <ThemedText type="error">{msg}</ThemedText>}/>
 
-          <Button onPress={handleSubmit} title="Submit" />
+          <View>
+            <Button onPress={handleSubmit} title="Submit" />
+          </View>
+
+          <View style={{ marginTop: 8 }}>
+            <Button onPress={() => setShowSettings(false) } title="Cancel" />
+          </View>
+
         </ThemedView>
       )}
       </Formik>
@@ -229,6 +240,8 @@ export function SolarEdge({ credentials, baseUrl, providerId, updateCredentials,
           },
         }}
       />
+
+      <Button onPress={() => setShowSettings(true) } title="Settings" />
 
     </View>
   );

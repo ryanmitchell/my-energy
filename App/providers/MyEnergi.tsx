@@ -36,7 +36,11 @@ import { ThemedView } from '@/components/ThemedView';
 
 import { ValueToHuman } from '@/constants/ValueToHuman';
 
-export function MyEnergi({ credentials, baseUrl, providerId, updateCredentials, ...otherProps }) {
+import { AppContext } from '@/constants/AppContext';
+
+export function MyEnergi({ credentials, providerId, ...otherProps }) {
+
+  const context = useContext(AppContext);
 
   let pollFrequency = 30 * 10000;
   let timeoutId;
@@ -54,7 +58,7 @@ export function MyEnergi({ credentials, baseUrl, providerId, updateCredentials, 
       return;
     }
 
-    fetch(baseUrl, {
+    fetch(context.baseUrl, {
       method: 'POST',
       body: JSON.stringify({
         service: 'my-energi',
@@ -78,7 +82,7 @@ export function MyEnergi({ credentials, baseUrl, providerId, updateCredentials, 
           }
         });
 
-        let totals = await fetch(baseUrl, {
+        let totals = await fetch(context.baseUrl, {
           method: 'POST',
           body: JSON.stringify({
             service: 'my-energi',
@@ -103,7 +107,7 @@ export function MyEnergi({ credentials, baseUrl, providerId, updateCredentials, 
         if (anchorDate.offset != 0) {
             let offsetDate = anchorDate.offset > 0 ? anchorDate.startOf('day').minus({ minutes: anchorDate.offset }) : anchorDate.startOf('day').plus({ minutes: anchorDate.offset });
 
-            totals = await fetch(baseUrl, {
+            totals = await fetch(context.baseUrl, {
               method: 'POST',
               body: JSON.stringify({
                 service: 'my-energi',
@@ -182,7 +186,7 @@ export function MyEnergi({ credentials, baseUrl, providerId, updateCredentials, 
       }}
       onSubmit={values => {
         credentials = values;
-        updateCredentials(providerId, values);
+        context.updateCredentials(providerId, values);
         showSettings(false);
       }}
       >
@@ -207,7 +211,14 @@ export function MyEnergi({ credentials, baseUrl, providerId, updateCredentials, 
           />
           <ErrorMessage name="password" render={msg => <ThemedText type="error">{msg}</ThemedText>}/>
 
-          <Button onPress={handleSubmit} title="Submit" />
+          <View>
+            <Button onPress={handleSubmit} title="Submit" />
+          </View>
+
+          <View style={{ marginTop: 8 }}>
+            <Button onPress={() => setShowSettings(false) } title="Cancel" />
+          </View>
+
         </ThemedView>
       )}
       </Formik>
