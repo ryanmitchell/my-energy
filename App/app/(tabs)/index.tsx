@@ -100,8 +100,6 @@ export default function HomeScreen() {
     }
   });
 
-
-
   return (
     <AppContext.Provider value={{
       baseUrl: 'https://energy-proxy.test',

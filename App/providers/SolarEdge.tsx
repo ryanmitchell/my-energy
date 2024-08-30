@@ -136,7 +136,7 @@ export function SolarEdge({ credentials, providerId, ...otherProps }) {
       onSubmit={values => {
         credentials = values;
         context.updateCredentials(providerId, values);
-        showSettings(false);
+        setShowSettings(false);
       }}
       >
       {({ handleChange, handleBlur, handleSubmit, values }) => (

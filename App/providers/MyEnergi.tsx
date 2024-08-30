@@ -82,38 +82,15 @@ export function MyEnergi({ credentials, providerId, ...otherProps }) {
           }
         });
 
-        let totals = await fetch(context.baseUrl, {
-          method: 'POST',
-          body: JSON.stringify({
-            service: 'my-energi',
-            device: credentials.device,
-            password: credentials.password,
-            endpoint: '/cgi-jdayhour-E' + credentials.device + '-' + anchorDate.toFormat('yyyy-MM-dd'),
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
+        if (r.eddi && r.eddi.length) {
 
-        totals = await totals.json();
-
-        for (let u in totals) {
-            r.totals = totals[u];
-        }
-
-        // if we are in a timezone offset but the myenergi api uses UTC,
-        // so we need to check yesterday or forwards to tomorrow the right
-        // number of hours to compensate
-        if (anchorDate.offset != 0) {
-            let offsetDate = anchorDate.offset > 0 ? anchorDate.startOf('day').minus({ minutes: anchorDate.offset }) : anchorDate.startOf('day').plus({ minutes: anchorDate.offset });
-
-            totals = await fetch(context.baseUrl, {
+            let totals = await fetch(context.baseUrl, {
               method: 'POST',
               body: JSON.stringify({
                 service: 'my-energi',
                 device: credentials.device,
                 password: credentials.password,
-                endpoint: '/cgi-jdayhour-E' + credentials.device + '-' + offsetDate.toFormat('yyyy-MM-dd'),
+                endpoint: '/cgi-jdayhour-E' + r.eddi[0].sno + '-' + anchorDate.toFormat('yyyy-MM-dd'),
               }),
               headers: {
                 'Content-Type': 'application/json',
@@ -123,18 +100,49 @@ export function MyEnergi({ credentials, providerId, ...otherProps }) {
             totals = await totals.json();
 
             for (let u in totals) {
-                totals[u].forEach((total) => {
-                    if (anchorDate.offset > 0) {
-                        if (total.hr >= (24 - (anchorDate.offset / 60))) {
-                            r.totals = [total].concat(r.totals);
-                        }
-                    } else {
-                        if (total.hr < (24 - (anchorDate.offset / 60))) {
-                            r.totals.push(total);
-                        }
-                    }
-                });
+                r.totals = totals[u];
             }
+
+            // if we are in a timezone offset but the myenergi api uses UTC,
+            // so we need to check yesterday or forwards to tomorrow the right
+            // number of hours to compensate
+            if (anchorDate.offset != 0) {
+                let offsetDate = anchorDate.offset > 0 ? anchorDate.startOf('day').minus({ minutes: anchorDate.offset }) : anchorDate.startOf('day').plus({ minutes: anchorDate.offset });
+
+                totals = await fetch(context.baseUrl, {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    service: 'my-energi',
+                    device: credentials.device,
+                    password: credentials.password,
+                    endpoint: '/cgi-jdayhour-E' + r.eddi[0].sno + '-' + offsetDate.toFormat('yyyy-MM-dd'),
+                  }),
+                  headers: {
+                    'Content-Type': 'application/json',
+                  }
+                });
+
+                totals = await totals.json();
+
+                for (let u in totals) {
+                    if (! totals[u].forEach) {
+                        continue;
+                    }
+
+                    totals[u].forEach((total) => {
+                        if (anchorDate.offset > 0) {
+                            if (total.hr >= (24 - (anchorDate.offset / 60))) {
+                                r.totals = [total].concat(r.totals);
+                            }
+                        } else {
+                            if (total.hr < (24 - (anchorDate.offset / 60))) {
+                                r.totals.push(total);
+                            }
+                        }
+                    });
+                }
+            }
+
         }
 
         setMyEnergi(r);
@@ -143,7 +151,7 @@ export function MyEnergi({ credentials, providerId, ...otherProps }) {
         timeoutId = setTimeout(() => _myEnergi(credentials), pollFrequency);
 
       })
-      .catch(err => _handleError());
+      .catch(err => _handleError(err));
   }
 
   useEffect(() => {
@@ -187,7 +195,7 @@ export function MyEnergi({ credentials, providerId, ...otherProps }) {
       onSubmit={values => {
         credentials = values;
         context.updateCredentials(providerId, values);
-        showSettings(false);
+        setShowSettings(false);
       }}
       >
       {({ handleChange, handleBlur, handleSubmit, values }) => (
@@ -245,7 +253,7 @@ export function MyEnergi({ credentials, providerId, ...otherProps }) {
 
       { myEnergi.eddi && myEnergi.eddi[0] &&<ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Current Diverted to tank:</ThemedText>
-        <ThemedText>{ ValueToHuman(myEnergi.eddi[0].div * 1000) }</ThemedText>
+        <ThemedText>{ ValueToHuman(myEnergi.eddi[0].div) }</ThemedText>
       </ThemedView>
       }
 
